@@ -1,9 +1,9 @@
 '''
 @File : money_control.py
 @Author : Sudharshana VP
-@Contact : sudharshanavp@protonmail.com
+@Contact : sudharshanavp@outlook.com
 '''
 
-import parse_utility
+from parser_utils import money_control
 
 URL_MONEY_CONTROL = "https://www.moneycontrol.com/news/tags/"

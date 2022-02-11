@@ -1,7 +1,7 @@
 '''
 @File : twitter_parse.py
 @Author : Sudharshana VP
-@Contact : sudharshanavp@protonmail.com
+@Contact : sudharshanavp@outlook.com
 '''
 
 import tweepy
