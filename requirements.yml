@@ -1,0 +1,17 @@
+# run conda env create --file environment.yml
+name: stock_prediction
+channels:
+- conda-forge
+- defaults
+dependencies:
+- python>=3.5
+- anaconda
+- numpy
+- pandas
+- nltk
+- scikit-learn
+- tweepy
+- matplotlib
+- pip
+  - newsapi-python
+  - gnews
