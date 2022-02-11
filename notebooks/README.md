@@ -4,6 +4,8 @@ All raw/protyped codes are to be stored in jupyter notebooks until they work as 
 
 Each notebook have their own purpose as follows:
 
+* tweet_parse.ipynb: to test parsing of tweets related to a particular stock.
+
 * news_parse.ipynb: To test various news api for parsing headlines and news data.
 
 * sentiment_analysis.ipynb: To test various nlp libraries for sentiment analysis.
