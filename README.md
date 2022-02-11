@@ -6,4 +6,4 @@ Currently in the works, estimated month of completion is April 2022.
 
 ## Twitter Parsing
 
-In order for twitter parsing to work you need to modify the Constants.py file and add your API Keys and Tokens there.
+In order for twitter parsing to work you need to modify the Constants.py file and add your API Keys and Tokens there. Move the file to src directory
