@@ -1,3 +1,9 @@
+'''
+@File : twitter_parse.py
+@Author : Sudharshana VP
+@Contact : sudharshanavp@protonmail.com
+'''
+
 import tweepy
 from src import Constants
 
@@ -5,5 +11,4 @@ from src import Constants
 auth = tweepy.OAuthHandler(Constants.API_CONSUMER_KEY, Constants.API_CONSUMER_SECRET)
 auth.set_access_token(Constants.API_ACCESS_TOKEN, Constants.API_ACCESS_TOKEN_SECRET)
 api = tweepy.API(auth)
-
 
