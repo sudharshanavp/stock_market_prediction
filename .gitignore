@@ -4,6 +4,7 @@
 # Folders
 datasets/
 .vscode/
+docs/
 
 # Files
 Constants.py
