@@ -1,3 +1,9 @@
+# Word Documents temp files 
 ~$*
+
+# Folders
 datasets/
+.vscode/
+
+# Files
 Constants.py
