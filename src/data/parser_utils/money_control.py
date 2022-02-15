@@ -11,7 +11,7 @@ from parse_utility import get_page
 URL_MONEY_CONTROL = "https://www.moneycontrol.com/news/tags/"
 
 
-def get_news_link(stock_name: str) -> List[str]:
+def get_page_links(stock_name: str) -> List[str]:
     """Get the moneycontrol website links for the news webpages of a particular stock
 
     Args:
@@ -30,19 +30,33 @@ def get_news_link(stock_name: str) -> List[str]:
     return page_links
 
 
-def get_headlines(page_links: List[str]) -> List[str]:
+def get_article_list(page_links: List[str]) -> List[str]:
+    article_list = []
+    for link in page_links:
+        article_list.append(get_page(link).find("ul", id="cagetory").find_all("a"))
+    return sum(article_list, [])
+
+
+def get_headlines(article_list: List[str]) -> List[str]:
     """Get all headlines available from webpages specified in the input
 
     Args:
-        page_links (List[str]): List of urls to webpages
+        page_links (List[str]): List of html hyperlink tags(<a> tags) to articles
 
     Returns:
-        List[str]: List of headlines scraped from the webpages
+        List[str]: List of headlines scraped from the articles
     """
     headline_list = []
-    for link in page_links:
-        article_list = get_page(link).find("ul", id="cagetory").find_all("a")
     for article_block in article_list:
         headline_list.append(article_block.text)
     headline_list = list(filter(("").__ne__, headline_list))
     return headline_list
+
+
+def get_article_links(article_list: List[str]) -> List[str]:
+    article_links = []
+    for article_block in article_list:
+        link = article_block["href"]
+        if link not in article_links:
+            article_links.append(link)
+    return article_links
