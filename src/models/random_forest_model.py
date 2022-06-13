@@ -9,12 +9,13 @@ from sklearn.metrics import classification_report, accuracy_score
 
 class RandomForest:
     def __init__(self, in_data, days) -> None:
-        self.in_data = in_data
+        self.in_data = StockData.string_to_int(in_data)
         self.features_data = pd.DataFrame
         self.days = days
         self.target_names = ["Down Day", "Up Day"]
 
     def feature_engineering(self):
+
         price_diff_feature = StockData.change_in_price(self.in_data)
         price_diff_feature["Symbol"] = self.in_data["Symbol"]
 
