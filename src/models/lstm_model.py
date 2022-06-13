@@ -1,4 +1,4 @@
-import data.stock_prediction_data as StockData
+import data.stock_prediction_lstm_data as StockData
 import tensorflow as tf
 import numpy as np
 
