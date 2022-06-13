@@ -32,62 +32,135 @@ theme = {
 
 random_forest_predicted = 1.0
 
+pricePredictionLayout = (
+    dbc.Row(
+        [
+            dbc.Col(
+                [
+                    html.H2(
+                        children="Price Prediction", style={"padding-left": "20px"}
+                    ),
+                    dcc.Dropdown(
+                        symbol.index,
+                        id="pandas-dropdown-1",
+                        value=dff["Company Name"][0],
+                        style={"width": "100%", "margin-bottom": "1rem"},
+                    ),
+                    dbc.Card(
+                        dbc.CardBody(
+                            [
+                                html.Div(id="output-container-1"),
+                            ]
+                        ),
+                        style={"width": "100%"},
+                    ),
+                    dbc.Card(
+                        dbc.CardBody(
+                            [
+                                html.Div(id="output-container-2"),
+                            ]
+                        ),
+                        style={"width": "100%"},
+                    ),
+                ],
+                md=6,
+                style={"padding": "1rem"},
+            ),
+            dbc.Col(
+                [
+                    html.H2("Data analysis", style={"padding-left": "20px"}),
+                    dcc.Graph(id="time-series-chart"),
+                    dbc.Label("Stock features"),
+                    dcc.Dropdown(
+                        id="stock_features",
+                        options=["High", "Low", "Open", "Close"],
+                        value="High",
+                    ),
+                ],
+                md=6,
+                style={"padding": "1rem"},
+            ),
+        ],
+        style={},
+    ),
+)
+
+sentimentLayout = html.Div(
+    [
+        html.H2(children="Sentimental Analysis"),
+        "Overall Market Sentiment: Positive",
+        html.Br(),
+        "Stock sentiment: Negative",
+        html.Br(),
+        "Sentimental: -0.93",
+        html.Br(),
+        "Accuracy of Sentiment Analysis: 95.6%",
+    ]
+)
+
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.layout = html.Div(
     [
-        html.H1(children="Stock Market Prediction"),
-        dbc.Row(
-            [
-                dbc.Col(
-                    [
-                        html.H2(children="Price Prediction"),
-                        dcc.Dropdown(
-                            symbol.index,
-                            id="pandas-dropdown-1",
-                            value=dff["Company Name"][0],
-                        ),
-                        html.Div(id="output-container-1"),
-                    ],
-                    md=6,
+        dbc.NavbarSimple(
+            children=[
+                dbc.NavItem(dbc.NavLink("Price Prediction", href="#", active="exact")),
+                dbc.NavItem(
+                    dbc.NavLink(
+                        "Sentiment analysis",
+                        href="sentimental_analysis",
+                        active="exact",
+                    )
                 ),
-                dbc.Col(
-                    [
-                        html.H2("Data analysis"),
-                        dcc.Graph(id="time-series-chart"),
-                        dbc.Label("Stock features"),
-                        dcc.Dropdown(
-                            id="stock_features",
-                            options=["High", "Low", "Open", "Close"],
-                            value="High",
-                        ),
-                    ],
-                    md=6,
-                ),
-            ]
-            style={}
+            ],
+            brand="Stock Market Prediction",
+            brand_href="#",
+            color="primary",
+            dark=True,
         ),
+        dcc.Location(id="url"),
+        html.Div(id="page_content"),
     ]
 )
 
 
 @app.callback(
-    Output("output-container-1", "children"),
+    [
+        Output("output-container-1", "children"),
+        Output("output-container-2", "children"),
+    ],
     Input("pandas-dropdown-1", "value"),
 )
 def update_output(value):
     # print(value)
     container1 = html.Div(
         [
-            "Estimated Price: {}".format(value),
+            html.H2("Regression"),
+            html.P("Description"),
+            html.Label("Prediction Model: "),
+            " LSTM 30 Day Moving Averrage",
             html.Br(),
-            "Prediction Model: LSTM 30 Day Moving Averrage ",
+            html.Label("Estimated Price:", style={"font-weight": "bold"}),
+            value,
             html.Br(),
-            "Accuracy of Model: 89.93 ",
+            html.Label("Mean absolute Error of Model: "),
+            " 89.93",
             html.Br(),
-            "Stock Trend: Downward",
+            html.Label("Stock Trend: "),
+            " Downward",
         ]
     )
-    return container1
+    container2 = html.Div(
+        [
+            html.H2("Classification"),
+            html.P("Description"),
+            html.Label("Stock Classification: "),
+            " LSTM 30 Day Moving Averrage",
+            html.Br(),
+            html.Label("Accuracy of Model: "),
+            " 89.93",
+        ]
+    )
+    return container1, container2
 
 
 @app.callback(
