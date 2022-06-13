@@ -3,6 +3,34 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 
+def string_to_int(in_data: pd.DataFrame):
+    in_data[
+        [
+            "Prev Close",
+            "Open",
+            "High",
+            "Low",
+            "Last",
+            "Close",
+            "VWAP",
+            "Volume",
+        ]
+    ] = pd.to_numeric[
+        [
+            "Prev Close",
+            "Open",
+            "High",
+            "Low",
+            "Last",
+            "Close",
+            "VWAP",
+            "Volume",
+        ]
+    ]
+
+    return in_data
+
+
 def change_in_price(in_data: pd.DataFrame):
 
     new_data = in_data[
