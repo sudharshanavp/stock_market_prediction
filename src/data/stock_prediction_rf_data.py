@@ -2,6 +2,36 @@ import pandas as pd
 import numpy as np
 
 
+def change_in_price(in_data: pd.DataFrame):
+
+    new_data = in_data[
+        [
+            "Date",
+            "Symbol",
+            "Prev Close",
+            "Open",
+            "High",
+            "Low",
+            "Last",
+            "Close",
+            "VWAP",
+            "Volume",
+        ]
+    ]
+
+    new_data = new_data.sort_values(by=["Symbol", "Date"])
+    new_data = new_data["change_in_price"] = new_data["Close"].diff()
+
+
+def symbol_change_row(in_data: pd.DataFrame):
+    mask = in_data["Symbol"] != in_data["Symbol"].shift(1)
+    in_data["change_in_price"] = np.where(
+        mask == True, np.nan, in_data["change_in_price"]
+    )
+    in_data[in_data.isna().any(axis=1)]
+    return in_data
+
+
 class RandomForestPreprocessing:
     def __init__(self, stock_symbol, days_out, n, w):
         self.stock_symbol = stock_symbol
@@ -13,33 +43,33 @@ class RandomForestPreprocessing:
         )
         self.features = pd.DataFrame()
 
-    def values_sort_price_change_calculation(self):
+    # def values_sort_price_change_calculation(self):
 
-        self.price_data = self.price_data[
-            [
-                "Date",
-                "Symbol",
-                "Prev Close",
-                "Open",
-                "High",
-                "Low",
-                "Last",
-                "Close",
-                "VWAP",
-                "Volume",
-            ]
-        ]
+    #     self.price_data = self.price_data[
+    #         [
+    #             "Date",
+    #             "Symbol",
+    #             "Prev Close",
+    #             "Open",
+    #             "High",
+    #             "Low",
+    #             "Last",
+    #             "Close",
+    #             "VWAP",
+    #             "Volume",
+    #         ]
+    #     ]
 
-        self.price_data.sort_values(by=["Symbol", "Date"], inplace=True)
-        self.price_data["change_in_price"] = self.price_data["Close"].diff()
+    #     self.price_data
+    #     self.price_data["change_in_price"] = self.price_data["Close"].diff()
 
-    def row_symbol_change(self):
+    # def row_symbol_change(self):
 
-        mask = self.price_data["Symbol"] != self.price_data["Symbol"].shift(1)
-        self.price_data["change_in_price"] = np.where(
-            mask == True, np.nan, self.price_data["change_in_price"]
-        )
-        self.price_data[self.price_data.isna().any(axis=1)]
+    #     mask = self.price_data["Symbol"] != self.price_data["Symbol"].shift(1)
+    #     self.price_data["change_in_price"] = np.where(
+    #         mask == True, np.nan, self.price_data["change_in_price"]
+    #     )
+    #     self.price_data[self.price_data.isna().any(axis=1)]
 
     def grouping_signal_flag(self):
 
