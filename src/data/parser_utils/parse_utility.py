@@ -60,6 +60,7 @@ def clean_article(article: str) -> List[str]:
         "'s",
         "“",
         "”",
+        " Ltd.",
     ]
     stopwords.extend(new_stop_words)
     clean = [
