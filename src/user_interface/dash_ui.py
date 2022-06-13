@@ -23,7 +23,7 @@ symbol.to_dict()
 # url='https://github.com/sudharshanavp/stock_market_prediction/blob/machine_learning/data/ind_nifty50list.csv'
 # df1 = pd.read_csv(url)
 theme = {
-    "dark": True,
+    "dark": False,
     "detail": "#007439",
     "primary": "#00EA64",
     "secondary": "#6E6E6E",
