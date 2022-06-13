@@ -1,15 +1,9 @@
 from dash import Dash, dcc, html, Input, Output
-from plotly.express import data
 import plotly.express as px
 import dash_bootstrap_components as dbc
-import joblib
+from joblib import load
 import pandas as pd
 import dash_daq as daq
-import csv
-
-# import urllib2
-import requests
-import pandas as pd
 
 nifty50 = "https://raw.githubusercontent.com/sudharshanavp/stock_market_prediction/machine_learning/data/ind_nifty50list.csv"
 adani = "https://raw.githubusercontent.com/sudharshanavp/stock_market_prediction/machine_learning/data/raw/stock/yahoo_finance/ADANIPORTS"
@@ -29,62 +23,55 @@ theme = {
     "secondary": "#6E6E6E",
 }
 
+# loaded_rf_model = load("..\..\models\rf_models\TCS.joblib")
+# random_forest_data = data_preprocessing("TCS")
+# random_forest_object = RandomForest(random_forest_data)
 
-app = Dash(__name__, external_stylesheets=[dbc.themes.DARKLY])
+# # Output will be -1.0 or
+# random_forest_predicted = random_forest_object.predict()[0]
+
+random_forest_predicted = 1.0
+
+app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.layout = html.Div(
     [
         html.H1(children="Stock Market Prediction"),
-        html.Div(
+        dbc.Row(
             [
-                html.H2(children="Price Prediction"),
-                dcc.Dropdown(
-                    symbol.index, id="pandas-dropdown-1", value=dff["Company Name"][0]
-                ),
-                html.Div(id="output-container-1"),
-            ],
-            style={"width": "49%", "display": "inline-block"},
-        ),
-        html.Div(
-            [html.H2(children="Sentiment Analysis"), html.Div(id="output-container-2")],
-            style={"width": "49%", "float": "right", "display": "inline-block"},
-        ),
-        html.Div(
-            [
-                html.H2("Stock price analysis"),
-                dbc.Row(
+                dbc.Col(
                     [
-                        dbc.Col(
-                            dcc.RadioItems(
-                                id="radioo",
-                                options=["High", "Low", "Open", "Close"],
-                                value="High",
-                                labelStyle={"display": "block"},
-                            ),
-                            md=1,
-                            style={"padding-left": "20px"},
+                        html.H2(children="Price Prediction"),
+                        dcc.Dropdown(
+                            symbol.index,
+                            id="pandas-dropdown-1",
+                            value=dff["Company Name"][0],
                         ),
-                        dbc.Col(dcc.Graph(id="time-series-chart"), md=10),
+                        html.Div(id="output-container-1"),
                     ],
-                    align="center",
+                    md=6,
                 ),
-                html.P("Select stock:"),
-                dcc.Dropdown(
-                    id="ticker",
-                    options=dff.Symbol,
-                    value="AMZN",
-                    clearable=False,
+                dbc.Col(
+                    [
+                        html.H2("Data analysis"),
+                        dcc.Graph(id="time-series-chart"),
+                        dbc.Label("Stock features"),
+                        dcc.Dropdown(
+                            id="stock_features",
+                            options=["High", "Low", "Open", "Close"],
+                            value="High",
+                        ),
+                    ],
+                    md=6,
                 ),
             ]
+            style={}
         ),
     ]
 )
 
 
 @app.callback(
-    [
-        Output("output-container-1", "children"),
-        Output("output-container-2", "children"),
-    ],
+    Output("output-container-1", "children"),
     Input("pandas-dropdown-1", "value"),
 )
 def update_output(value):
@@ -100,29 +87,17 @@ def update_output(value):
             "Stock Trend: Downward",
         ]
     )
-    container2 = html.Div(
-        [
-            "Overall Market Sentiment: Positive",
-            html.Br(),
-            "Stock Sentiment: Negative",
-            html.Br(),
-            "Sentimental Score: 89.93 ",
-            html.Br(),
-            "Accuracy of Sentiment Analysis: 95.6%",
-        ]
-    )
-    return container1, container2
+    return container1
 
 
 @app.callback(
     Output("time-series-chart", "figure"),
     [
-        Input("ticker", "value"),
-        Input("radioo", "value"),
+        Input("stock_features", "value"),
         Input("pandas-dropdown-1", "value"),
     ],
 )
-def display_time_series(ticker, radioo, dpd):
+def display_time_series(radioo, dpd):
     # print(type(symbol[dpd]))
     df = pd.read_csv(
         "https://raw.githubusercontent.com/sudharshanavp/stock_market_prediction/machine_learning/data/raw/stock/yahoo_finance/"
@@ -130,6 +105,20 @@ def display_time_series(ticker, radioo, dpd):
     )
     # replace with your own data source
     fig = px.line(df, x="Date", y=radioo)
+    fig.update_xaxes(
+        rangeslider_visible=True,
+        rangeselector=dict(
+            buttons=list(
+                [
+                    dict(count=1, label="1m", step="month", stepmode="backward"),
+                    dict(count=6, label="6m", step="month", stepmode="backward"),
+                    dict(count=1, label="YTD", step="year", stepmode="todate"),
+                    dict(count=1, label="1y", step="year", stepmode="backward"),
+                    dict(step="all"),
+                ]
+            )
+        ),
+    )
     return fig
 
 
