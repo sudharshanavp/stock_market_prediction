@@ -5,17 +5,17 @@ from joblib import load
 import pandas as pd
 import dash_daq as daq
 
-nifty50 = "https://raw.githubusercontent.com/sudharshanavp/stock_market_prediction/machine_learning/data/ind_nifty50list.csv"
-adani = "https://raw.githubusercontent.com/sudharshanavp/stock_market_prediction/machine_learning/data/raw/stock/yahoo_finance/ADANIPORTS"
-dff = pd.read_csv(nifty50)
-df1 = pd.read_csv(adani)
-symbol = pd.Series(dff["Symbol"])
-symbol.index = pd.Series(dff["Company Name"])
+nifty_url = "https://raw.githubusercontent.com/sudharshanavp/stock_market_prediction/machine_learning/data/ind_nifty50list.csv"
+adani_url = "https://raw.githubusercontent.com/sudharshanavp/stock_market_prediction/machine_learning/data/raw/stock/yahoo_finance/ADANIPORTS"
+nifty_df = pd.read_csv(nifty_url)
+stock_df = pd.read_csv(adani_url)
+symbol = pd.Series(nifty_df["Symbol"])
+symbol.index = pd.Series(nifty_df["Company Name"])
 symbol.to_dict()
 
 # df =  pd.read_csv("companyNamesList.csv")
 # url='https://github.com/sudharshanavp/stock_market_prediction/blob/machine_learning/data/ind_nifty50list.csv'
-# df1 = pd.read_csv(url)
+# stock_df = pd.read_csv(url)
 theme = {
     "dark": False,
     "detail": "#007439",
@@ -43,7 +43,7 @@ pricePredictionLayout = (
                     dcc.Dropdown(
                         symbol.index,
                         id="pandas-dropdown-1",
-                        value=dff["Company Name"][0],
+                        value=nifty_df["Company Name"][0],
                         style={"width": "100%", "margin-bottom": "1rem"},
                     ),
                     dbc.Card(
@@ -117,8 +117,7 @@ app.layout = html.Div(
             color="primary",
             dark=True,
         ),
-        dcc.Location(id="url"),
-        html.Div(id="page_content"),
+        html.Div(pricePredictionLayout),
     ]
 )
 
