@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from sklearn.model_selection import train_test_split
 
 
 def change_in_price(in_data: pd.DataFrame):
@@ -20,7 +21,9 @@ def change_in_price(in_data: pd.DataFrame):
     ]
 
     new_data = new_data.sort_values(by=["Symbol", "Date"])
-    new_data = new_data["change_in_price"] = new_data["Close"].diff()
+    new_data["change_in_price"] = new_data["Close"].diff()
+
+    return new_data[["Symbol", "change_in_price"]]
 
 
 def symbol_change_row(in_data: pd.DataFrame):
@@ -87,7 +90,7 @@ def relative_strength_index(days: int, in_data: pd.DataFrame):
     in_data["up_days"] = up_df["change_in_price"]
     in_data["RSI"] = relative_strength_index
 
-    rsi_dataframe = in_data["RSI"]
+    rsi_dataframe = in_data[["Symbol", "down_days", "up_days", "RSI"]]
 
     return rsi_dataframe
 
@@ -114,11 +117,9 @@ def stochastic_oscillator(days: int, in_data: pd.DataFrame):
 
     k_percent = 100 * ((in_data["Close"] - low_14) / (high_14 - low_14))
 
-    in_data["low_14"] = low_14
-    in_data["high_14"] = high_14
     in_data["k_percent"] = k_percent
 
-    return in_data["k_percent"]
+    return in_data[["Symbol", "k_percent"]]
 
 
 def williams(days: int, in_data: pd.DataFrame):
@@ -127,7 +128,7 @@ def williams(days: int, in_data: pd.DataFrame):
     r_percent = ((high_14 - in_data["Close"]) / (high_14 - low_14)) * -100
     in_data["r_percent"] = r_percent
 
-    return in_data["r_percent"]
+    return in_data[["Symbol", "r_percent"]]
 
 
 def macd(in_data: pd.DataFrame):
@@ -144,7 +145,7 @@ def macd(in_data: pd.DataFrame):
     in_data["MACD"] = macd
     in_data["MACD_EMA"] = ema_9_macd
 
-    return in_data[["MACD", "MACD_EMA"]]
+    return in_data[["Symbol", "MACD", "MACD_EMA"]]
 
 
 def price_rate_of_change(days: int, in_data: pd.DataFrame):
@@ -181,7 +182,7 @@ def apply_obv(in_data: pd.DataFrame):
 
     in_data["On Balance Volume"] = obv_groups.reset_index(level=0, drop=True)
 
-    return in_data["On Balance Volume"]
+    return in_data[["Symbol", "On Balance Volume"]]
 
 
 def create_prediction_column(in_data: pd.DataFrame):
@@ -191,12 +192,30 @@ def create_prediction_column(in_data: pd.DataFrame):
     in_data["Prediction"] = close_groups
     in_data.loc[in_data["Prediction"] == 0.0] = 1.0
 
-    return in_data["Prediction"]
+    return in_data[["Symbol", "Prediction"]]
 
 
 def remove_null_values(in_data: pd.DataFrame):
     in_data = in_data.dropna()
     return in_data
+
+
+def split_data(in_data: pd.DataFrame):
+    X_Cols = in_data[
+        [
+            "RSI",
+            "k_percent",
+            "r_percent",
+            "Price_Rate_Of_Change",
+            "MACD",
+            "On Balance Volume",
+        ]
+    ]
+    Y_Cols = in_data["Prediction"]
+
+    x_train, x_test, y_train, y_test = train_test_split(X_Cols, Y_Cols, random_state=0)
+
+    return x_train, x_test, y_train, y_test
 
 
 # class RandomForestPreprocessing:
