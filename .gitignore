@@ -8,4 +8,6 @@ docs/
 
 # Files
 Constants.py
+
+# Python Files
 __pycache__/
