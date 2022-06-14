@@ -1,4 +1,4 @@
-from dash import Dash, dcc, html, Input, Output
+from dash import Dash, dcc, html, Input, Output, State
 import plotly.express as px
 import dash_bootstrap_components as dbc
 from joblib import load
@@ -40,11 +40,16 @@ pricePredictionLayout = (
                     html.H2(
                         children="Price Prediction", style={"padding-left": "20px"}
                     ),
-                    dcc.Dropdown(
-                        symbol.index,
-                        id="pandas-dropdown-1",
-                        value=nifty_df["Company Name"][0],
-                        style={"width": "100%", "margin-bottom": "1rem"},
+                    html.Div(
+                        [
+                            dcc.Dropdown(
+                                symbol.index,
+                                id="pandas-dropdown-1",
+                                value=nifty_df["Company Name"][0],
+                            ),
+                            dbc.Button("Predict", id="predict_button", color="primary"),
+                        ],
+                        className="d-grid gap-2",
                     ),
                     dbc.Card(
                         dbc.CardBody(
@@ -124,52 +129,17 @@ app.layout = html.Div(
 
 @app.callback(
     [
+        Output("time-series-chart", "figure"),
         Output("output-container-1", "children"),
         Output("output-container-2", "children"),
     ],
-    Input("pandas-dropdown-1", "value"),
-)
-def update_output(value):
-    # print(value)
-    container1 = html.Div(
-        [
-            html.H2("Regression"),
-            html.P("Description"),
-            html.Label("Prediction Model: "),
-            " LSTM 30 Day Moving Averrage",
-            html.Br(),
-            html.Label("Estimated Price:", style={"font-weight": "bold"}),
-            value,
-            html.Br(),
-            html.Label("Mean absolute Error of Model: "),
-            " 89.93",
-            html.Br(),
-            html.Label("Stock Trend: "),
-            " Downward",
-        ]
-    )
-    container2 = html.Div(
-        [
-            html.H2("Classification"),
-            html.P("Description"),
-            html.Label("Stock Classification: "),
-            " LSTM 30 Day Moving Averrage",
-            html.Br(),
-            html.Label("Accuracy of Model: "),
-            " 89.93",
-        ]
-    )
-    return container1, container2
-
-
-@app.callback(
-    Output("time-series-chart", "figure"),
+    Input("predict_button", "n_clicks"),
     [
-        Input("stock_features", "value"),
-        Input("pandas-dropdown-1", "value"),
+        State("stock_features", "value"),
+        State("pandas-dropdown-1", "value"),
     ],
 )
-def display_time_series(radioo, dpd):
+def display_time_series(n, radioo, dpd):
     # print(type(symbol[dpd]))
     df = pd.read_csv(
         "https://raw.githubusercontent.com/sudharshanavp/stock_market_prediction/machine_learning/data/raw/stock/yahoo_finance/"
@@ -191,7 +161,35 @@ def display_time_series(radioo, dpd):
             )
         ),
     )
-    return fig
+    container1 = html.Div(
+        [
+            html.H2("Regression"),
+            html.P("Description"),
+            html.Label("Prediction Model: "),
+            " LSTM 30 Day Moving Averrage",
+            html.Br(),
+            html.Label("Estimated Price:", style={"font-weight": "bold"}),
+            dpd,
+            html.Br(),
+            html.Label("Mean absolute Error of Model: "),
+            " 89.93",
+            html.Br(),
+            html.Label("Stock Trend: "),
+            " Downward",
+        ]
+    )
+    container2 = html.Div(
+        [
+            html.H2("Classification"),
+            html.P("Description"),
+            html.Label("Stock Classification: "),
+            " LSTM 30 Day Moving Averrage",
+            html.Br(),
+            html.Label("Accuracy of Model: "),
+            " 89.93",
+        ]
+    )
+    return fig, container1, container2
 
 
 if __name__ == "__main__":
