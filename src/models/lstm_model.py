@@ -1,4 +1,4 @@
-import data.stock_prediction_data as StockData
+import data.stock_prediction_lstm_data as StockData
 import tensorflow as tf
 import numpy as np
 
@@ -103,7 +103,7 @@ class LongShortTermMemory:
             epochs=100,
             validation_data=valid_set,
             callbacks=[early_stopping, model_checkpoint, reset_states],
-            verbose=0,
+            verbose=0
         )
 
         return model
