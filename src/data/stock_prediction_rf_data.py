@@ -3,30 +3,14 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 
+def return_dataframe(path: str):
+    return pd.read_csv(path, thousands=',')
+
+
 def string_to_int(in_data: pd.DataFrame):
-    in_data[
-        [
-            "Prev Close",
-            "Open",
-            "High",
-            "Low",
-            "Last",
-            "Close",
-            "VWAP",
-            "Volume",
-        ]
-    ] = pd.to_numeric[
-        [
-            "Prev Close",
-            "Open",
-            "High",
-            "Low",
-            "Last",
-            "Close",
-            "VWAP",
-            "Volume",
-        ]
-    ]
+
+    cols = in_data.columns.drop(["Date", "Symbol", "Series", "Volume"])
+    in_data[cols] = in_data[cols].apply(pd.to_numeric, errors="coerce")
 
     return in_data
 
@@ -44,7 +28,7 @@ def change_in_price(in_data: pd.DataFrame):
             "Last",
             "Close",
             "VWAP",
-            "Volume",
+            "Volume"
         ]
     ]
 
@@ -69,9 +53,7 @@ def smoothen_data(days_out: int, in_data: pd.DataFrame):
     ].transform(lambda x: x.ewm(span=days_out).mean())
 
     smoothed_df = pd.concat(
-        [in_data[["Symbol", "Date"]], smooth_data],
-        axis=1,
-        sort=False,
+        [in_data[["Symbol", "Date"]], smooth_data], axis=1, sort=False
     )
     return smoothed_df
 
@@ -118,7 +100,7 @@ def relative_strength_index(days: int, in_data: pd.DataFrame):
     in_data["up_days"] = up_df["change_in_price"]
     in_data["RSI"] = relative_strength_index
 
-    rsi_dataframe = in_data[["Symbol", "down_days", "up_days", "RSI"]]
+    rsi_dataframe = in_data["RSI"].to_list()
 
     return rsi_dataframe
 
@@ -147,7 +129,7 @@ def stochastic_oscillator(days: int, in_data: pd.DataFrame):
 
     in_data["k_percent"] = k_percent
 
-    return in_data[["Symbol", "k_percent"]]
+    return in_data["k_percent"].to_list()
 
 
 def williams(days: int, in_data: pd.DataFrame):
@@ -156,7 +138,7 @@ def williams(days: int, in_data: pd.DataFrame):
     r_percent = ((high_14 - in_data["Close"]) / (high_14 - low_14)) * -100
     in_data["r_percent"] = r_percent
 
-    return in_data[["Symbol", "r_percent"]]
+    return in_data["r_percent"].to_list()
 
 
 def macd(in_data: pd.DataFrame):
@@ -173,7 +155,7 @@ def macd(in_data: pd.DataFrame):
     in_data["MACD"] = macd
     in_data["MACD_EMA"] = ema_9_macd
 
-    return in_data[["Symbol", "MACD", "MACD_EMA"]]
+    return in_data["MACD"].to_list()
 
 
 def price_rate_of_change(days: int, in_data: pd.DataFrame):
@@ -181,7 +163,7 @@ def price_rate_of_change(days: int, in_data: pd.DataFrame):
         lambda x: x.pct_change(periods=days)
     )
 
-    return in_data["Price_Rate_Of_Change"]
+    return in_data["Price_Rate_Of_Change"].to_list()
 
 
 def on_balance_volume(group):
@@ -206,11 +188,11 @@ def on_balance_volume(group):
 
 
 def apply_obv(in_data: pd.DataFrame):
-    obv_groups = in_data.groupby("Symbol").apply(on_balance_volume)
+    obv_groups = on_balance_volume(in_data)
 
-    in_data["On Balance Volume"] = obv_groups.reset_index(level=0, drop=True)
+    in_data["On Balance Volume"] = obv_groups
 
-    return in_data[["Symbol", "On Balance Volume"]]
+    return in_data["On Balance Volume"].to_list()
 
 
 def create_prediction_column(in_data: pd.DataFrame):
@@ -220,7 +202,7 @@ def create_prediction_column(in_data: pd.DataFrame):
     in_data["Prediction"] = close_groups
     in_data.loc[in_data["Prediction"] == 0.0] = 1.0
 
-    return in_data[["Symbol", "Prediction"]]
+    return in_data["Prediction"].to_list()
 
 
 def remove_null_values(in_data: pd.DataFrame):
@@ -236,7 +218,7 @@ def split_data(in_data: pd.DataFrame):
             "r_percent",
             "Price_Rate_Of_Change",
             "MACD",
-            "On Balance Volume",
+            "On Balance Volume"
         ]
     ]
     Y_Cols = in_data["Prediction"]
