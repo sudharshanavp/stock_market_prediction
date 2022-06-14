@@ -1,14 +1,33 @@
-from dash import Dash, dcc, html, Input, Output, State
+from dash import Dash, dash_table, dcc, html, Input, Output, State
 import plotly.express as px
 import dash_bootstrap_components as dbc
+from pathlib import Path
+import sys
+
+from sklearn.metrics import accuracy_score, precision_recall_curve
+
+# import models.random_forest_model as rf
+
 from joblib import load
 import pandas as pd
 import dash_daq as daq
 
-nifty_url = "https://raw.githubusercontent.com/sudharshanavp/stock_market_prediction/machine_learning/data/ind_nifty50list.csv"
-adani_url = "https://raw.githubusercontent.com/sudharshanavp/stock_market_prediction/machine_learning/data/raw/stock/yahoo_finance/ADANIPORTS"
-nifty_df = pd.read_csv(nifty_url)
-stock_df = pd.read_csv(adani_url)
+cwd = Path.cwd()
+root_folder = str(cwd.parent.parent)
+data_folder = str(cwd.parent.parent) + "\\data"
+
+nse_folder = data_folder + "\\processed\\stocks\\nse_scraped\\"
+
+model_folder = root_folder + "\\models"
+random_forest_folder = model_folder + "\\rf_models\\"
+lstm_folder = model_folder + "\\lstm_models\\"
+
+nifty_path = data_folder + "\\ind_nifty50list.csv"
+stock_path = data_folder + "\\processed\\stocks\\nse_scraped\\ADANIPORTS.csv"
+news_path = data_folder + "\\dummy_news_data.csv"
+nifty_df = pd.read_csv(nifty_path)
+stock_df = pd.read_csv(stock_path)
+news_df = pd.read_csv(news_path)
 symbol = pd.Series(nifty_df["Symbol"])
 symbol.index = pd.Series(nifty_df["Company Name"])
 symbol.to_dict()
@@ -20,16 +39,18 @@ theme = {
     "secondary": "#6E6E6E",
 }
 
-# loaded_rf_model = load("..\..\models\rf_models\TCS.joblib")
-# random_forest_data = data_preprocessing("TCS")
-# random_forest_object = RandomForest(random_forest_data)
+
+# loaded_rf_model = load("../../models/rf_models/.joblib")
+
+# random_forest_object = rf.RandomForest(random_forest_data)
 
 # # Output will be -1.0 or
 # random_forest_predicted = random_forest_object.predict()[0]
 
-random_forest_predicted = 1.0
 
-pricePredictionLayout = (
+# random_forest_predicted = 1.0
+
+pricePredictionLayout = [
     dbc.Row(
         [
             dbc.Col(
@@ -55,6 +76,7 @@ pricePredictionLayout = (
                             ]
                         ),
                         style={"width": "100%"},
+                        className="container1",
                     ),
                     dbc.Card(
                         dbc.CardBody(
@@ -63,6 +85,7 @@ pricePredictionLayout = (
                             ]
                         ),
                         style={"width": "100%"},
+                        className="container2",
                     ),
                 ],
                 md=6,
@@ -70,7 +93,18 @@ pricePredictionLayout = (
             ),
             dbc.Col(
                 [
-                    html.H2("Data analysis", style={"padding-left": "20px"}),
+                    html.H2(
+                        "Data analysis",
+                        style={"padding-left": "20px", "text-align": "center"},
+                    ),
+                    html.P(
+                        id="company-title",
+                        style={
+                            "font-weight": "bold",
+                            "color": "green",
+                            "text-align": "center",
+                        },
+                    ),
                     dcc.Graph(id="time-series-chart"),
                     dbc.Label("Stock features"),
                     dcc.Dropdown(
@@ -81,23 +115,41 @@ pricePredictionLayout = (
                 ],
                 md=6,
                 style={"padding": "1rem"},
+                className="analysis",
             ),
         ],
         style={},
     ),
-)
+]
 
-sentimentLayout = html.Div(
-    [
-        html.H2(children="Sentimental Analysis"),
-        html.Label("Overall Market Sentiment: Positive"),
-        html.Br(),
-        html.Label("Stock sentiment: Negative"),
-        html.Br(),
-        html.Label("Sentimental: -0.93"),
-        html.Br(),
-        html.Label("Accuracy of Sentiment Analysis: 95.6%"),
-    ]
+sentimentLayout = dbc.Container(
+    dbc.Row(
+        [
+            dbc.Col(
+                [
+                    html.H2(children="Sentimental Analysis"),
+                    html.Label("Overall Market Sentiment: Positive"),
+                    html.Br(),
+                    html.Label("Stock sentiment: Negative"),
+                    html.Br(),
+                    html.Label("Sentimental: -0.93"),
+                    html.Br(),
+                    html.Label("Accuracy of Sentiment Analysis: 95.6%"),
+                ],
+                className="sentimental-container",
+            ),
+            dbc.Col(
+                [
+                    html.H1("Top Headlines", style={"text-align": "center"}),
+                    dash_table.DataTable(
+                        news_df.head(10).to_dict("records"),
+                        [{"name": i, "id": i} for i in news_df.columns],
+                        style_cell={"textAlign": "left"},
+                    ),
+                ]
+            ),
+        ]
+    )
 )
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -148,6 +200,7 @@ def render_page_content(pathname):
         Output("time-series-chart", "figure"),
         Output("output-container-1", "children"),
         Output("output-container-2", "children"),
+        Output("company-title", "children"),
     ],
     Input("predict_button", "n_clicks"),
     [
@@ -177,35 +230,52 @@ def display_time_series(n, radioo, dpd):
             )
         ),
     )
+
+    # rf_object = rf.RandomForest(nse_folder + symbol[dpd] + ".csv")
+    # rf_object.feature_engineering()
+    # rf_model = random_forest_folder + symbol[dpd] + ".joblib"
+    # accuracy, _ = rf_object.test_model(rf_model)
+    # predicted_value = rf_object.predict_result(rf_model)[-1]
+
+    # if predicted_value > 0:
+    #     predicted_value = "Up Day"
+    # else:
+    #     predicted_value = "Down Day"
+
+    predicted_value = "DUMMY"
+    accuracy = 74.3213213213
+
+    estimated_price = 123.213
+    mea = 4.5e-6
+
     container1 = html.Div(
         [
             html.H2("Regression"),
             html.P("Description"),
             html.Label("Prediction Model: "),
-            " LSTM 30 Day Moving Averrage",
+            " LSTM 10 ",
             html.Br(),
             html.Label("Estimated Price:", style={"font-weight": "bold"}),
-            dpd,
+            estimated_price,
             html.Br(),
             html.Label("Mean absolute Error of Model: "),
-            " 89.93",
-            html.Br(),
-            html.Label("Stock Trend: "),
-            " Downward",
-        ]
+            mea,
+        ],
+        className="regression",
     )
     container2 = html.Div(
         [
             html.H2("Classification"),
             html.P("Description"),
             html.Label("Stock Classification: "),
-            " LSTM 30 Day Moving Averrage",
+            predicted_value,
             html.Br(),
-            html.Label("Accuracy of Model: "),
-            " 89.93",
-        ]
+            html.Label("Accuracy of Model (%): "),
+            str(accuracy),
+        ],
+        className="classification",
     )
-    return fig, container1, container2
+    return fig, container1, container2, dpd
 
 
 if __name__ == "__main__":
