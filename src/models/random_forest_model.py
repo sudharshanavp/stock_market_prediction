@@ -9,48 +9,35 @@ from sklearn.metrics import classification_report, accuracy_score
 
 class RandomForest:
     def __init__(self, in_data, days) -> None:
-        self.in_data = StockData.string_to_int(in_data)
-        self.features_data = pd.DataFrame
+        self.in_data = StockData.string_to_int(StockData.return_dataframe(in_data))
+        self.features_data = pd.DataFrame()
         self.days = days
         self.target_names = ["Down Day", "Up Day"]
 
     def feature_engineering(self):
 
         price_diff_feature = StockData.change_in_price(self.in_data)
-        price_diff_feature["Symbol"] = self.in_data["Symbol"]
-
         rsi_feature = StockData.relative_strength_index(self.days, price_diff_feature)
-
         stoch_osci_feature = StockData.stochastic_oscillator(
-            self.days, self.in_data[["Symbol", "Low", "High"]]
+            self.days, self.in_data[["Symbol", "Low", "High", "Close"]]
         )
-
         williams_feature = StockData.williams(
-            self.days, self.in_data[["Symbol", "Low", "High"]]
+            self.days, self.in_data[["Symbol", "Low", "High", "Close"]]
         )
-
         macd_feature = StockData.macd(self.in_data[["Symbol", "Close"]])
-
         proc_feature = StockData.price_rate_of_change(9, self.in_data)
-
+        
+        self.features_data["RSI"] = pd.Series(rsi_feature).values
+        self.features_data["k_percent"] = pd.Series(stoch_osci_feature).values
+        self.features_data["r_percent"] = pd.Series(williams_feature).values
+        self.features_data["MACD"] = pd.Series(macd_feature).values
+        self.features_data["Price_Rate_Of_Change"] = pd.Series(proc_feature).values
+        
         obv_feature = StockData.apply_obv(self.in_data)
-
         target = StockData.create_prediction_column(self.in_data[["Symbol", "Close"]])
 
-        df_list = [
-            rsi_feature,
-            stoch_osci_feature,
-            williams_feature,
-            macd_feature,
-            proc_feature,
-            obv_feature,
-            target,
-        ]
-
-        self.features_data = reduce(
-            lambda left, right: pd.merge(left, right, on=["Symbol"], how="outer"),
-            df_list,
-        )
+        self.features_data["On Balance Volume"] = pd.Series(obv_feature).values
+        self.features_data["Prediction"] = pd.Series(target).values
 
         self.features_data = StockData.remove_null_values(self.features_data)
 
@@ -68,7 +55,7 @@ class RandomForest:
             "max_depth": max_depth,
             "min_samples_split": min_samples_split,
             "min_samples_leaf": min_samples_leaf,
-            "bootstrap": bootstrap,
+            "bootstrap": bootstrap
         }
 
         rf = RandomForestClassifier()
@@ -77,9 +64,9 @@ class RandomForest:
             param_distributions=random_grid,
             n_iter=100,
             cv=3,
-            verbose=2,
+            verbose=0,
             random_state=42,
-            n_jobs=-1,
+            n_jobs=-1
         )
 
         return rf_random
@@ -114,7 +101,7 @@ class RandomForest:
             y_true=y_test,
             y_pred=y_pred,
             target_names=self.target_names,
-            output_dict=True,
+            output_dict=True
         )
 
         report_df = pd.DataFrame(report).transpose()
