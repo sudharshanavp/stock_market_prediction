@@ -13,9 +13,6 @@ symbol = pd.Series(nifty_df["Symbol"])
 symbol.index = pd.Series(nifty_df["Company Name"])
 symbol.to_dict()
 
-# df =  pd.read_csv("companyNamesList.csv")
-# url='https://github.com/sudharshanavp/stock_market_prediction/blob/machine_learning/data/ind_nifty50list.csv'
-# stock_df = pd.read_csv(url)
 theme = {
     "dark": False,
     "detail": "#007439",
@@ -93,22 +90,24 @@ pricePredictionLayout = (
 sentimentLayout = html.Div(
     [
         html.H2(children="Sentimental Analysis"),
-        "Overall Market Sentiment: Positive",
+        html.Label("Overall Market Sentiment: Positive"),
         html.Br(),
-        "Stock sentiment: Negative",
+        html.Label("Stock sentiment: Negative"),
         html.Br(),
-        "Sentimental: -0.93",
+        html.Label("Sentimental: -0.93"),
         html.Br(),
-        "Accuracy of Sentiment Analysis: 95.6%",
+        html.Label("Accuracy of Sentiment Analysis: 95.6%"),
     ]
 )
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-app.layout = html.Div(
+
+app.layout = dbc.Container(
     [
+        dcc.Location(id="url"),
         dbc.NavbarSimple(
             children=[
-                dbc.NavItem(dbc.NavLink("Price Prediction", href="#", active="exact")),
+                dbc.NavItem(dbc.NavLink("Price Prediction", href="/", active="exact")),
                 dbc.NavItem(
                     dbc.NavLink(
                         "Sentiment analysis",
@@ -122,9 +121,26 @@ app.layout = html.Div(
             color="primary",
             dark=True,
         ),
-        html.Div(pricePredictionLayout),
-    ]
+        html.Div(children=pricePredictionLayout, id="content"),
+    ],
+    fluid=True,
 )
+
+
+@app.callback(Output("content", "children"), Input("url", "pathname"))
+def render_page_content(pathname):
+    if pathname == "/":
+        return pricePredictionLayout
+    elif pathname == "/sentimental_analysis":
+        return sentimentLayout
+
+    return dbc.Jumbotron(
+        [
+            html.H1("404: Not Found", className="text-danger"),
+            html.Hr(),
+            html.P(f"The pathname {pathname} was not recognised..."),
+        ]
+    )
 
 
 @app.callback(
