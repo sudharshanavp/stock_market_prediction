@@ -18,6 +18,9 @@ class LongShortTermMemory:
         self.train, self.validate, self.test = StockData.data_normalization(
             self.train_df, self.validate_df, self.test_df
         )
+        self.scalar_object = StockData.fit_scalar_object(
+            self.train_df, self.validate_df, self.test_df
+        )
 
     def predict_values(self, model_path: str):
         keras = tf.keras

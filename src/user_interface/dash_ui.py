@@ -6,25 +6,26 @@ import sys
 
 from sklearn.metrics import accuracy_score, precision_recall_curve
 
-# import models.random_forest_model as rf
-
+import models.random_forest_model as rf
+import models.lstm_model as lstm
 from joblib import load
 import pandas as pd
 import dash_daq as daq
 
 cwd = Path.cwd()
-root_folder = str(cwd.parent.parent)
-data_folder = str(cwd.parent.parent) + "\\data"
+root_folder = str(cwd.parent.parent).replace("\\", "/")
+data_folder = str(cwd.parent.parent).replace("\\", "/") + "/data"
 
-nse_folder = data_folder + "\\processed\\stocks\\nse_scraped\\"
+nse_folder = data_folder + "/processed/stocks/nse_scraped/"
+yf_folder = data_folder + "/raw/stock/yahoo_finance/"
 
-model_folder = root_folder + "\\models"
-random_forest_folder = model_folder + "\\rf_models\\"
-lstm_folder = model_folder + "\\lstm_models\\"
+model_folder = root_folder + "/models"
+random_forest_folder = model_folder + "/rf_models/"
+lstm_folder = model_folder + "/lstm_models/"
 
-nifty_path = data_folder + "\\ind_nifty50list.csv"
-stock_path = data_folder + "\\processed\\stocks\\nse_scraped\\ADANIPORTS.csv"
-news_path = data_folder + "\\dummy_news_data.csv"
+nifty_path = data_folder + "/ind_nifty50list.csv"
+stock_path = data_folder + "/processed/stocks/nse_scraped/ADANIPORTS.csv"
+news_path = data_folder + "/dummy_news_data.csv"
 nifty_df = pd.read_csv(nifty_path)
 stock_df = pd.read_csv(stock_path)
 news_df = pd.read_csv(news_path)
@@ -103,6 +104,7 @@ pricePredictionLayout = [
                             "font-weight": "bold",
                             "color": "green",
                             "text-align": "center",
+                            "font-size": "1.25em",
                         },
                     ),
                     dcc.Graph(id="time-series-chart"),
@@ -218,6 +220,7 @@ def display_time_series(n, radioo, dpd):
     fig = px.line(df, x="Date", y=radioo)
     fig.update_xaxes(
         rangeslider_visible=True,
+        title_text=dpd,
         rangeselector=dict(
             buttons=list(
                 [
@@ -231,21 +234,25 @@ def display_time_series(n, radioo, dpd):
         ),
     )
 
-    # rf_object = rf.RandomForest(nse_folder + symbol[dpd] + ".csv")
-    # rf_object.feature_engineering()
-    # rf_model = random_forest_folder + symbol[dpd] + ".joblib"
-    # accuracy, _ = rf_object.test_model(rf_model)
-    # predicted_value = rf_object.predict_result(rf_model)[-1]
+    rf_object = rf.RandomForest(nse_folder + symbol[dpd] + ".csv", 14)
+    rf_object.feature_engineering()
+    rf_model = load(random_forest_folder + symbol[dpd] + ".joblib")
+    accuracy, _ = rf_object.test_model(rf_model)
+    predicted_value = rf_object.predict_result(rf_model)[-1]
 
-    # if predicted_value > 0:
-    #     predicted_value = "Up Day"
-    # else:
-    #     predicted_value = "Down Day"
+    if predicted_value > 0:
+        predicted_value = "Up Day"
+    else:
+        predicted_value = "Down Day"
 
-    predicted_value = "DUMMY"
-    accuracy = 74.3213213213
+    stock_path = yf_folder + symbol[dpd]
+    lstm_object = lstm.LongShortTermMemory(stock_path)
+    estimated_price = float(lstm_object.predict_values(lstm_folder + symbol[dpd]))
 
-    estimated_price = 123.213
+    predicted_value  # = "DUMMY"
+    accuracy  # = 74.3213213213
+
+    estimated_price  # = 123.213
     mea = 4.5e-6
 
     container1 = html.Div(

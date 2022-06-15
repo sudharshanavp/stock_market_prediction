@@ -1,0 +1,427 @@
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+
+
+def return_dataframe(path: str):
+    return pd.read_csv(path, thousands=',')
+
+
+def string_to_int(in_data: pd.DataFrame):
+
+    cols = in_data.columns.drop(["Date", "Symbol", "Series", "Volume"])
+    in_data[cols] = in_data[cols].apply(pd.to_numeric, errors="coerce")
+
+    return in_data
+
+
+def change_in_price(in_data: pd.DataFrame):
+
+    new_data = in_data[
+        [
+            "Date",
+            "Symbol",
+            "Prev Close",
+            "Open",
+            "High",
+            "Low",
+            "Last",
+            "Close",
+            "VWAP",
+            "Volume"
+        ]
+    ]
+
+    new_data = new_data.sort_values(by=["Symbol", "Date"])
+    new_data["change_in_price"] = new_data["Close"].diff()
+
+    return new_data[["Symbol", "change_in_price"]]
+
+
+def symbol_change_row(in_data: pd.DataFrame):
+    mask = in_data["Symbol"] != in_data["Symbol"].shift(1)
+    in_data["change_in_price"] = np.where(
+        mask == True, np.nan, in_data["change_in_price"]
+    )
+    in_data[in_data.isna().any(axis=1)]
+    return in_data
+
+
+def smoothen_data(days_out: int, in_data: pd.DataFrame):
+    smooth_data = in_data.groupby(["Symbol"])[
+        ["Close", "Low", "High", "Open", "Volume"]
+    ].transform(lambda x: x.ewm(span=days_out).mean())
+
+    smoothed_df = pd.concat(
+        [in_data[["Symbol", "Date"]], smooth_data], axis=1, sort=False
+    )
+    return smoothed_df
+
+
+def generate_signal_flag(days_out: int, smoothed_df: pd.DataFrame):
+    smoothed_df["Signal_Flag"] = smoothed_df.groupby("Symbol")["Close"].transform(
+        lambda x: np.sign(x.diff(days_out))
+    )
+
+    return smoothed_df
+
+
+# Calculating Economic Indicators
+
+
+def relative_strength_index(days: int, in_data: pd.DataFrame):
+    up_df, down_df = (
+        in_data[["Symbol", "change_in_price"]].copy(),
+        in_data[["Symbol", "change_in_price"]].copy(),
+    )
+
+    up_df.loc["change_in_price"] = up_df.loc[
+        (up_df["change_in_price"] < 0), "change_in_price"
+    ] = 0
+
+    down_df.loc["change_in_price"] = down_df.loc[
+        (down_df["change_in_price"] > 0), "change_in_price"
+    ] = 0
+
+    down_df["change_in_price"] = down_df["change_in_price"].abs()
+
+    ewma_up = up_df.groupby("Symbol")["change_in_price"].transform(
+        lambda x: x.ewm(span=days).mean()
+    )
+
+    ewma_down = down_df.groupby("Symbol")["change_in_price"].transform(
+        lambda x: x.ewm(span=days).mean()
+    )
+
+    relative_strength = ewma_up / ewma_down
+    relative_strength_index = 100.0 - (100.0 / (1.0 + relative_strength))
+
+    in_data["down_days"] = down_df["change_in_price"]
+    in_data["up_days"] = up_df["change_in_price"]
+    in_data["RSI"] = relative_strength_index
+
+    rsi_dataframe = in_data["RSI"].to_list()
+
+    return rsi_dataframe
+
+
+def low_high(days: int, in_data: pd.DataFrame):
+    low_14, high_14 = (
+        in_data[["Symbol", "Low"]].copy(),
+        in_data[["Symbol", "High"]].copy(),
+    )
+
+    low_14 = low_14.groupby("Symbol")["Low"].transform(
+        lambda x: x.rolling(window=days).min()
+    )
+
+    high_14 = high_14.groupby("Symbol")["High"].transform(
+        lambda x: x.rolling(window=days).max()
+    )
+
+    return low_14, high_14
+
+
+def stochastic_oscillator(days: int, in_data: pd.DataFrame):
+    low_14, high_14 = low_high(days, in_data)
+
+    k_percent = 100 * ((in_data["Close"] - low_14) / (high_14 - low_14))
+
+    in_data["k_percent"] = k_percent
+
+    return in_data["k_percent"].to_list()
+
+
+def williams(days: int, in_data: pd.DataFrame):
+    low_14, high_14 = low_high(days, in_data)
+
+    r_percent = ((high_14 - in_data["Close"]) / (high_14 - low_14)) * -100
+    in_data["r_percent"] = r_percent
+
+    return in_data["r_percent"].to_list()
+
+
+def macd(in_data: pd.DataFrame):
+    ema_26 = in_data.groupby("Symbol")["Close"].transform(
+        lambda x: x.ewm(span=26).mean()
+    )
+    ema_12 = in_data.groupby("Symbol")["Close"].transform(
+        lambda x: x.ewm(span=12).mean()
+    )
+
+    macd = ema_12 - ema_26
+    ema_9_macd = macd.ewm(span=9).mean()
+
+    in_data["MACD"] = macd
+    in_data["MACD_EMA"] = ema_9_macd
+
+    return in_data["MACD"].to_list()
+
+
+def price_rate_of_change(days: int, in_data: pd.DataFrame):
+    in_data["Price_Rate_Of_Change"] = in_data.groupby("Symbol")["Close"].transform(
+        lambda x: x.pct_change(periods=days)
+    )
+
+    return in_data["Price_Rate_Of_Change"].to_list()
+
+
+def on_balance_volume(group):
+    volume = group["Volume"]
+    change = group["Close"].diff()
+    prev_obv = 0
+    obv_values = []
+
+    for i, j in zip(change, volume):
+        if i > 0:
+            current_obv = prev_obv + j
+        elif i < 0:
+            current_obv = prev_obv - j
+        else:
+            current_obv = prev_obv
+        # OBV.append(current_OBV)
+        prev_obv = current_obv
+        obv_values.append(current_obv)
+
+    # Return a panda series.
+    return pd.Series(obv_values, index=group.index)
+
+
+def apply_obv(in_data: pd.DataFrame):
+    obv_groups = on_balance_volume(in_data)
+
+    in_data["On Balance Volume"] = obv_groups
+
+    return in_data["On Balance Volume"].to_list()
+
+
+def create_prediction_column(in_data: pd.DataFrame):
+    close_groups = in_data.groupby("Symbol")["Close"]
+    close_groups = close_groups.transform(lambda x: np.sign(x.diff()))
+
+    in_data["Prediction"] = close_groups
+    in_data.loc[in_data["Prediction"] == 0.0] = 1.0
+
+    return in_data["Prediction"].to_list()
+
+
+def remove_null_values(in_data: pd.DataFrame):
+    in_data = in_data.dropna()
+    return in_data
+
+
+def split_data(in_data: pd.DataFrame):
+    X_Cols = in_data[
+        [
+            "RSI",
+            "k_percent",
+            "r_percent",
+            "Price_Rate_Of_Change",
+            "MACD",
+            "On Balance Volume"
+        ]
+    ]
+    Y_Cols = in_data["Prediction"]
+
+    x_train, x_test, y_train, y_test = train_test_split(X_Cols, Y_Cols, random_state=0)
+
+    return x_train, x_test, y_train, y_test
+
+
+# class RandomForestPreprocessing:
+#     def __init__(self, stock_symbol, days_out, n, w):
+#         self.stock_symbol = stock_symbol
+#         self.days_out = days_out
+#         self.n = n
+#         self.w = w
+#         self.price_data = pd.read_csv(
+#             "../data/processed/stocks/nse_scraped/" + self.stock_symbol + ".csv"
+#         )
+#         self.features = pd.DataFrame()
+
+#     def values_sort_price_change_calculation(self):
+
+#         self.price_data = self.price_data[
+#             [
+#                 "Date",
+#                 "Symbol",
+#                 "Prev Close",
+#                 "Open",
+#                 "High",
+#                 "Low",
+#                 "Last",
+#                 "Close",
+#                 "VWAP",
+#                 "Volume",
+#             ]
+#         ]
+
+#         self.price_data
+#         self.price_data["change_in_price"] = self.price_data["Close"].diff()
+
+#     def row_symbol_change(self):
+
+#         mask = self.price_data["Symbol"] != self.price_data["Symbol"].shift(1)
+#         self.price_data["change_in_price"] = np.where(
+#             mask == True, np.nan, self.price_data["change_in_price"]
+#         )
+#         self.price_data[self.price_data.isna().any(axis=1)]
+
+#     def grouping_signal_flag(self):
+
+#         price_data_smoothed = self.price_data.groupby(["Symbol"])[
+#             ["Close", "Low", "High", "Open", "Volume"]
+#         ].transform(lambda x: x.ewm(span=self.days_out).mean())
+
+#         smoothed_df = pd.concat(
+#             [self.price_data[["Symbol", "Date"]], price_data_smoothed],
+#             axis=1,
+#             sort=False,
+#         )
+#         return smoothed_df
+
+#     def signal_flag(self, smoothed_df):
+#         smoothed_df["Signal_Flag"] = smoothed_df.groupby("Symbol")["Close"].transform(
+#             lambda x: np.sign(x.diff(self.days_out))
+#         )
+
+#         return smoothed_df
+
+#     def RSI(self):
+#         up_df, down_df = (
+#             self.price_data[["Symbol", "change_in_price"]].copy(),
+#             self.price_data[["Symbol", "change_in_price"]].copy(),
+#         )
+
+#         up_df.loc["change_in_price"] = up_df.loc[
+#             (up_df["change_in_price"] < 0), "change_in_price"
+#         ] = 0
+
+#         down_df.loc["change_in_price"] = down_df.loc[
+#             (down_df["change_in_price"] > 0), "change_in_price"
+#         ] = 0
+
+#         down_df["change_in_price"] = down_df["change_in_price"].abs()
+
+#         ewma_up = up_df.groupby("Symbol")["change_in_price"].transform(
+#             lambda x: x.ewm(span=self.n).mean()
+#         )
+#         ewma_down = down_df.groupby("Symbol")["change_in_price"].transform(
+#             lambda x: x.ewm(span=self.n).mean()
+#         )
+
+#         relative_strength = ewma_up / ewma_down
+
+#         relative_strength_index = 100.0 - (100.0 / (1.0 + relative_strength))
+
+#         self.price_data["down_days"] = down_df["change_in_price"]
+#         self.price_data["up_days"] = up_df["change_in_price"]
+#         self.price_data["RSI"] = relative_strength_index
+
+#     def Stochastic_Oscillator(self):
+#         low_14, high_14 = (
+#             self.price_data[["Symbol", "Low"]].copy(),
+#             self.price_data[["Symbol", "High"]].copy(),
+#         )
+
+#         low_14 = low_14.groupby("Symbol")["Low"].transform(
+#             lambda x: x.rolling(window=self.n).min()
+#         )
+#         high_14 = high_14.groupby("Symbol")["High"].transform(
+#             lambda x: x.rolling(window=self.n).max()
+#         )
+
+#         k_percent = 100 * ((self.price_data["Close"] - low_14) / (high_14 - low_14))
+
+#         self.price_data["low_14"] = low_14
+#         self.price_data["high_14"] = high_14
+#         self.price_data["k_percent"] = k_percent
+
+#     def Williams(self):
+#         # Make a copy of the high and low column.
+#         low_14, high_14 = (
+#             self.price_data[["Symbol", "Low"]].copy(),
+#             self.price_data[["Symbol", "High"]].copy(),
+#         )
+
+#         low_14 = low_14.groupby("Symbol")["Low"].transform(
+#             lambda x: x.rolling(window=self.n).min()
+#         )
+#         high_14 = high_14.groupby("Symbol")["High"].transform(
+#             lambda x: x.rolling(window=self.n).max()
+#         )
+
+#         r_percent = ((high_14 - self.price_data["Close"]) / (high_14 - low_14)) * -100
+
+#         self.price_data["r_percent"] = r_percent
+
+#     def MACD(self):
+#         ema_26 = self.price_data.groupby("Symbol")["Close"].transform(
+#             lambda x: x.ewm(span=26).mean()
+#         )
+#         ema_12 = self.price_data.groupby("Symbol")["Close"].transform(
+#             lambda x: x.ewm(span=12).mean()
+#         )
+#         macd = ema_12 - ema_26
+
+#         ema_9_macd = macd.ewm(span=9).mean()
+
+#         self.price_data["MACD"] = macd
+#         self.price_data["MACD_EMA"] = ema_9_macd
+
+#     def rate_of_change(self):
+#         self.price_data["Price_Rate_Of_Change"] = self.price_data.groupby("Symbol")[
+#             "Close"
+#         ].transform(lambda x: x.pct_change(periods=self.w))
+
+#     def obv(self, group):
+
+#         volume = group["Volume"]
+#         change = group["Close"].diff()
+
+#         prev_obv = 0
+#         obv_values = []
+
+#         for i, j in zip(change, volume):
+
+#             if i > 0:
+#                 current_obv = prev_obv + j
+#             elif i < 0:
+#                 current_obv = prev_obv - j
+#             else:
+#                 current_obv = prev_obv
+
+#             # OBV.append(current_OBV)
+#             prev_obv = current_obv
+#             obv_values.append(current_obv)
+
+#         # Return a panda series.
+#         return pd.Series(obv_values, index=group.index)
+
+#     def apply_obv_to_groups(self):
+#         obv_groups = self.price_data.groupby("Symbol").apply(self.obv)
+
+#         self.price_data["On Balance Volume"] = obv_groups.reset_index(
+#             level=0, drop=True
+#         )
+
+#     def close_group(self):
+#         close_groups = self.price_data.groupby("Symbol")["Close"]
+#         close_groups = close_groups.transform(lambda x: np.sign(x.diff()))
+#         self.price_data["Prediction"] = close_groups
+#         self.price_data.loc[self.price_data["Prediction"] == 0.0] = 1.0
+
+#     def close_group_nan_remove(self):
+#         print(
+#             "Before NaN Drop we have {} rows and {} columns".format(
+#                 self.price_data.shape[0], self.price_data.shape[1]
+#             )
+#         )
+
+#         self.price_data = self.price_data.dropna()
+
+#         print(
+#             "After NaN Drop we have {} rows and {} columns".format(
+#                 self.price_data.shape[0], self.price_data.shape[1]
+#             )
+#         )
