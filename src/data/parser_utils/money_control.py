@@ -6,7 +6,7 @@
 
 from typing import List
 
-from parse_utility import get_page
+import parse_utility
 
 URL_MONEY_CONTROL = "https://www.moneycontrol.com/news/tags/"
 
@@ -22,7 +22,7 @@ def get_page_links(stock_name: str) -> List[str]:
     """
     base_url = URL_MONEY_CONTROL + stock_name.replace(" ", "-") + ".html"
     number_of_pages = int(
-        get_page(base_url).find_all("a", class_="last")[-1]["data-page"]
+        parse_utility.get_page(base_url).find_all("a", class_="last")[-1]["data-page"]
     )
     page_links = []
     for i in range(1, number_of_pages + 1):
@@ -33,7 +33,9 @@ def get_page_links(stock_name: str) -> List[str]:
 def get_article_list(page_links: List[str]) -> List[str]:
     article_list = []
     for link in page_links:
-        article_list.append(get_page(link).find("ul", id="cagetory").find_all("a"))
+        article_list.append(
+            parse_utility.get_page(link).find("ul", id="cagetory").find_all("a")
+        )
     return sum(article_list, [])
 
 

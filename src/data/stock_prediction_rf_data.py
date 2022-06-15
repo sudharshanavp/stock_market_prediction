@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 
 
 def return_dataframe(path: str):
-    return pd.read_csv(path, thousands=',')
+    return pd.read_csv(path, thousands=",")
 
 
 def string_to_int(in_data: pd.DataFrame):
@@ -28,7 +28,7 @@ def change_in_price(in_data: pd.DataFrame):
             "Last",
             "Close",
             "VWAP",
-            "Volume"
+            "Volume",
         ]
     ]
 
@@ -218,7 +218,7 @@ def split_data(in_data: pd.DataFrame):
             "r_percent",
             "Price_Rate_Of_Change",
             "MACD",
-            "On Balance Volume"
+            "On Balance Volume",
         ]
     ]
     Y_Cols = in_data["Prediction"]
