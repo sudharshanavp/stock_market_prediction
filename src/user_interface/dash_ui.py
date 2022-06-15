@@ -127,22 +127,28 @@ pricePredictionLayout = [
 sentimentLayout = dbc.Container(
     dbc.Row(
         [
-            dbc.Col(
-                [
-                    html.H2(children="Sentimental Analysis"),
-                    html.Label("Overall Market Sentiment: Positive"),
-                    html.Br(),
-                    html.Label("Stock sentiment: Negative"),
-                    html.Br(),
-                    html.Label("Sentimental: -0.93"),
-                    html.Br(),
-                    html.Label("Accuracy of Sentiment Analysis: 95.6%"),
-                ],
-                className="sentimental-container",
-            ),
+            # dbc.Col(
+            #     [
+            #         html.H2(children="Sentimental Analysis"),
+            #         html.Label("Overall Market Sentiment: Positive"),
+            #         html.Br(),
+            #         html.Label("Stock sentiment: Negative"),
+            #         html.Br(),
+            #         html.Label("Sentimental: -0.93"),
+            #         html.Br(),
+            #         html.Label("Accuracy of Sentiment Analysis: 95.6%"),
+            #     ],
+            #     className="sentimental-container",
+            # ),
             dbc.Col(
                 [
                     html.H1("Top Headlines", style={"text-align": "center"}),
+                    dcc.Dropdown(
+                        symbol.index,
+                        id="pandas-dropdown-1",
+                        value=nifty_df["Company Name"][0],
+                        style={"margin-bottom": "1rem"},
+                    ),
                     dash_table.DataTable(
                         news_df.head(10).to_dict("records"),
                         [{"name": i, "id": i} for i in news_df.columns],
@@ -253,27 +259,31 @@ def display_time_series(n, radioo, dpd):
     accuracy  # = 74.3213213213
 
     estimated_price  # = 123.213
-    mea = 4.5e-6
+    # mea = 4.5e-6
 
     container1 = html.Div(
         [
             html.H2("Regression"),
-            html.P("Description"),
+            html.P(
+                "In this section we are trying to predict the next days closing price using the previous day's data. Since we are trying to predict a continous value we call this as regression"
+            ),
             html.Label("Prediction Model: "),
             " LSTM 10 ",
             html.Br(),
             html.Label("Estimated Price:", style={"font-weight": "bold"}),
             estimated_price,
             html.Br(),
-            html.Label("Mean absolute Error of Model: "),
-            mea,
+            # html.Label("Mean absolute Error of Model: "),
+            # mea,
         ],
         className="regression",
     )
     container2 = html.Div(
         [
             html.H2("Classification"),
-            html.P("Description"),
+            html.P(
+                "In price classification, we are trying to classify whether the stock price will go up or down the next day"
+            ),
             html.Label("Stock Classification: "),
             predicted_value,
             html.Br(),
